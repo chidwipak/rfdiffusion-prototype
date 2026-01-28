@@ -74,7 +74,7 @@ All three types work as additive embeddings and can be combined.
 
 ## Author
 
-Chidwipak - GSoC 2026 Applicant for DeepChem
+Chidwipak 
 
 ## References
 
