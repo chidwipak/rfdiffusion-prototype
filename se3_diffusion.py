@@ -297,7 +297,8 @@ class SE3DiffusionDenoiser(nn.Module):
     """
     Full SE3-aware diffusion denoiser.
     
-    Architecture:
+    Architecture
+    ------------
     1. Embed noisy coordinates to frames
     2. Create residue embeddings
     3. Apply SE3DiffusionBlocks with time conditioning

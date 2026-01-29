@@ -20,6 +20,7 @@ from typing import Optional, Tuple
 class SinusoidalPositionEmbedding(nn.Module):
     """
     Sinusoidal position embedding for diffusion timesteps.
+    
     This is the standard embedding used in DDPM and similar models.
     """
     
@@ -29,10 +30,16 @@ class SinusoidalPositionEmbedding(nn.Module):
     
     def forward(self, t: torch.Tensor) -> torch.Tensor:
         """
-        Args:
-            t: Tensor of timesteps of shape (batch_size,)
+        Compute positional embeddings.
+
+        Parameters
+        ----------
+        t : torch.Tensor
+            Tensor of timesteps of shape (batch_size,)
         
-        Returns:
+        Returns
+        -------
+        torch.Tensor
             Embeddings of shape (batch_size, dim)
         """
         device = t.device
@@ -57,11 +64,18 @@ class ResidualBlock(nn.Module):
     
     def forward(self, x: torch.Tensor, t_emb: torch.Tensor) -> torch.Tensor:
         """
-        Args:
-            x: Input features of shape (batch, num_residues, feature_dim)
-            t_emb: Time embeddings of shape (batch, time_dim)
+        Forward pass.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input features of shape (batch, num_residues, feature_dim)
+        t_emb : torch.Tensor
+            Time embeddings of shape (batch, time_dim)
         
-        Returns:
+        Returns
+        -------
+        torch.Tensor
             Output of shape (batch, num_residues, feature_dim)
         """
         h = self.fc1(x)
@@ -129,11 +143,16 @@ class BackboneDiffusionDenoiser(nn.Module):
         """
         Predict noise from noisy coordinates at timestep t.
         
-        Args:
-            x: Noisy backbone coordinates, shape (batch, num_residues, 9)
-            t: Timesteps, shape (batch,)
+        Parameters
+        ----------
+        x : torch.Tensor
+            Noisy backbone coordinates, shape (batch, num_residues, 9)
+        t : torch.Tensor
+            Timesteps, shape (batch,)
         
-        Returns:
+        Returns
+        -------
+        torch.Tensor
             Predicted noise, shape (batch, num_residues, 9)
         """
         # Get time embeddings
@@ -192,13 +211,19 @@ class DiffusionSchedule:
         """
         Forward diffusion: add noise to x0.
         
-        Args:
-            x0: Original coordinates, shape (batch, num_residues, 9)
-            t: Timesteps, shape (batch,)
-            noise: Optional noise tensor
+        Parameters
+        ----------
+        x0 : torch.Tensor
+            Original coordinates, shape (batch, num_residues, 9)
+        t : torch.Tensor
+            Timesteps, shape (batch,)
+        noise : torch.Tensor, optional
+            Optional noise tensor
         
-        Returns:
-            Tuple of (noisy_x, noise)
+        Returns
+        -------
+        Tuple
+            (noisy_x, noise)
         """
         if noise is None:
             noise = torch.randn_like(x0)
@@ -219,12 +244,18 @@ class DiffusionSchedule:
         """
         Reverse diffusion: denoise x_t by one step.
         
-        Args:
-            model: Denoiser network
-            x_t: Noisy coordinates at timestep t
-            t: Current timestep
+        Parameters
+        ----------
+        model : nn.Module
+            Denoiser network
+        x_t : torch.Tensor
+            Noisy coordinates at timestep t
+        t : torch.Tensor
+            Current timestep
         
-        Returns:
+        Returns
+        -------
+        torch.Tensor
             Denoised coordinates at timestep t-1
         """
         # Predict noise
@@ -256,12 +287,18 @@ class DiffusionSchedule:
         """
         Generate samples by full reverse diffusion.
         
-        Args:
-            model: Trained denoiser
-            shape: (batch_size, num_residues, 9)
-            device: Device to run on
+        Parameters
+        ----------
+        model : nn.Module
+            Trained denoiser
+        shape : tuple
+            (batch_size, num_residues, 9)
+        device : str
+            Device to run on
         
-        Returns:
+        Returns
+        -------
+        torch.Tensor
             Generated coordinates
         """
         model.eval()
@@ -282,12 +319,18 @@ def compute_diffusion_loss(
     """
     Compute the simplified DDPM training loss.
     
-    Args:
-        model: Denoiser network
-        x0: Clean backbone coordinates
-        schedule: Diffusion schedule
+    Parameters
+    ----------
+    model : nn.Module
+        Denoiser network
+    x0 : torch.Tensor
+        Clean backbone coordinates
+    schedule : DiffusionSchedule
+        Diffusion schedule
     
-    Returns:
+    Returns
+    -------
+    torch.Tensor
         MSE loss between predicted and actual noise
     """
     batch_size = x0.shape[0]
