@@ -60,3 +60,17 @@ cath_data/
 cath_checkpoints/
 scAF_results/
 *.log
+
+# Private notes
+DISCORD_REPLY.md
+MENTOR_*.md
+
+# Checkpoints (too large)
+checkpoints/
+checkpoints_v2/
+
+# Shell scripts
+*.sh
+
+# Results
+*_results.json

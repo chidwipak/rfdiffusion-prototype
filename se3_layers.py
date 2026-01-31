@@ -144,9 +144,9 @@ class InvariantPointAttention(nn.Module):
         # out_pts_global = weights * v_pts_global
         
         # Flatten points for attention matmul: (b, h, n, p*3)
-        v_pts_flat = v_pts_global.view(b, n, h, -1).permute(0, 2, 1, 3)
+        v_pts_flat = v_pts_global.reshape(b, n, h, -1).permute(0, 2, 1, 3)
         out_pts_global = torch.matmul(attn_weights, v_pts_flat) # (b, h, n, p*3)
-        out_pts_global = out_pts_global.permute(0, 2, 1, 3).view(b, n, h, -1, 3)
+        out_pts_global = out_pts_global.permute(0, 2, 1, 3).reshape(b, n, h, -1, 3)
         
         # Transform back to local frame of residue i
         # x_local = R^T * (x_global - t)

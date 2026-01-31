@@ -116,8 +116,9 @@ class RoseTTAFoldBlock(nn.Module):
         # --- 2D Track Updates ---
         # "Triangle" multiplication or simple attention (Simplified here for prototype)
         # We use a simplified pairwise interaction block
+        # NOTE: Using Linear instead of Conv2d for K80 compatibility (cuDNN issues)
         self.norm_2d_in = nn.LayerNorm(d_model_2d)
-        self.proj_2d_mid = nn.Conv2d(d_model_2d, d_model_2d, kernel_size=1)
+        self.proj_2d_mid = nn.Linear(d_model_2d, d_model_2d)  # Replaced Conv2d for K80 compat
         
         # Communication 1D -> 2D (outer product)
         self.proj_1d_to_2d_1 = nn.Linear(d_model_1d, d_model_2d // 2)
@@ -197,10 +198,10 @@ class RoseTTAFoldBlock(nn.Module):
         # (This is a simplified 2d update for prototype)
         pair_2d = pair_2d + F.pad(outer, (0, pair_2d.shape[-1] - outer.shape[-1]))
         
-        # Simple Pair Conv (instead of full Triangle Attn for speed in prototype)
-        pair_in = pair_2d.permute(0, 3, 1, 2) # (B, C, L, L)
-        pair_out = self.proj_2d_mid(pair_in)
-        pair_2d = pair_2d + pair_out.permute(0, 2, 3, 1)
+        # Simple Pair Linear (replaced Conv2d for K80 compatibility)
+        # pair_2d: (B, L, L, C) - apply linear on last dim
+        pair_out = self.proj_2d_mid(self.norm_2d_in(pair_2d))
+        pair_2d = pair_2d + pair_out
         
         # --- 3. Update 3D Track (Structure) ---
         # IPA uses 1D features + structure to update 1D features AND structure

@@ -1,94 +1,185 @@
-# RFDiffusion Prototype for DeepChem (GSoC 2026)
+# RFDiffusion Prototype - GSoC 2026# RFDiffusion Prototype for DeepChem (GSoC 2026)
 
-This is my preparation project for Google Summer of Code 2026.
+
+
+hey! this is my prep work for gsoc 2026 with deepchem. building a diffusion model for protein backbone generation (like rfdiffusion).This is my preparation project for Google Summer of Code 2026.
+
 My goal is to bring advanced protein design models like RFDiffusion into DeepChem.
+
+## quick start
 
 ## What's in this repo?
 
-I implemented a diffusion model that generates protein backbones. It works in 3 stages of complexity:
-1.  **Basic Denoising**: Simple diffusion (like for images).
-2.  **SE3-Equivariant**: Understands rotation and translation of molecules.
+```bash
+
+# setupI implemented a diffusion model that generates protein backbones. It works in 3 stages of complexity:
+
+source venv/bin/activate1.  **Basic Denoising**: Simple diffusion (like for images).
+
+pip install torch numpy pytest2.  **SE3-Equivariant**: Understands rotation and translation of molecules.
+
 3.  **RoseTTAFold Backbone**: The full 3-track architecture used in the actual RFDiffusion paper.
 
-## Quick Start
+# run tests (38 tests)
 
-```bash
-# 1. Setup
+python -m pytest tests/ -v## Quick Start
+
+
+
+# run memorization sanity check```bash
+
+python run_memorization_test.py# 1. Setup
+
 python -m venv venv
-source venv/bin/activate
-pip install torch numpy matplotlib pytest
+
+# train on cathsource venv/bin/activate
+
+python train_improved.pypip install torch numpy matplotlib pytest
+
+```
 
 # 2. Run All Unit Tests (38 tests)
-python -m pytest tests/ -v
 
-# 3. Run Memorization Sanity Check
-python memorization_experiment.py --model se3 --proteins 5 --epochs 1000
+## what i builtpython -m pytest tests/ -v
 
-# 4. Run the Tutorial (Generates a protein!)
+
+
+3 levels of complexity:# 3. Run Memorization Sanity Check
+
+1. basic ddpm - simple denoising python memorization_experiment.py --model se3 --proteins 5 --epochs 1000
+
+2. se3 equivariant - rotation/translation invariant
+
+3. rosettafold backbone - full 3-track architecture# 4. Run the Tutorial (Generates a protein!)
+
 python tutorials/rfdiffusion_tutorial.py
 
+## training results
+
 # 5. Comparisons (Runs analysis script)
-python analysis.py
+
+trained on cath domains with multi-gpu (3x tesla k80):python analysis.py
+
 ```
 
-## ✅ Sanity Checks (Mentor's Request)
+| metric | value |
 
-### Memorization Experiment
-The mentor specifically asked: *"Can you memorize a tiny dataset? That is usually a good sanity check (5 to 10 datapoints)."*
+|--------|-------|## ✅ Sanity Checks (Mentor's Request)
+
+| best loss | 0.033 |
+
+| epochs | 1000 |### Memorization Experiment
+
+| loss reduction | 96.6% |The mentor specifically asked: *"Can you memorize a tiny dataset? That is usually a good sanity check (5 to 10 datapoints)."*
+
+| gpus | 3x k80 (ddp) |
 
 I implemented `memorization_experiment.py` which:
-- Creates a tiny dataset of 5 proteins with realistic geometry
-- Trains the model until it can reproduce the training data
-- Verifies physical validity (Ca-Ca distances ≈ 3.8 Å)
 
-```bash
+memorization test (mentor's sanity check):- Creates a tiny dataset of 5 proteins with realistic geometry
+
+- 5 proteins, 500 epochs- Trains the model until it can reproduce the training data
+
+- final loss: 0.018- Verifies physical validity (Ca-Ca distances ≈ 3.8 Å)
+
+- rmsd: 0.025
+
+- passed ✓```bash
+
 # Run the memorization sanity check
-python memorization_experiment.py --model se3 --proteins 5 --epochs 1000
 
-# Compare Basic MLP vs SE3 Model
-python memorization_experiment.py --model compare
-```
+## filespython memorization_experiment.py --model se3 --proteins 5 --epochs 1000
 
-### Unit Tests (38 tests, all passing ✓)
-```bash
-python -m pytest tests/ -v
-```
 
-Tests cover:
-- `test_backbone_diffusion.py` - Diffusion schedule, noise prediction
+
+```# Compare Basic MLP vs SE3 Model
+
+├── improved_diffusion.py    # transformer denoiser (per-atom noise)python memorization_experiment.py --model compare
+
+├── train_improved.py        # multi-gpu training script  ```
+
+├── run_memorization_test.py # sanity check script
+
+├── se3_diffusion.py         # se3 equivariant model### Unit Tests (38 tests, all passing ✓)
+
+├── rosettafold.py           # 3-track architecture```bash
+
+├── se3_layers.py            # invariant point attentionpython -m pytest tests/ -v
+
+├── conditioning.py          # motif/length/binder conditioning```
+
+├── tests/                   # 38 unit tests
+
+└── checkpoints_v2/          # trained weightsTests cover:
+
+```- `test_backbone_diffusion.py` - Diffusion schedule, noise prediction
+
 - `test_rosettafold.py` - 3-track architecture shapes
-- `test_se3_diffusion.py` - SE3 equivariance, frame representation
+
+## tests- `test_se3_diffusion.py` - SE3 equivariance, frame representation
+
 - `test_conditioning.py` - Motif, length, and binder conditioning
-- `test_memorization.py` - Tiny dataset creation, geometry validation
 
-## Code Example
+38 tests covering:- `test_memorization.py` - Tiny dataset creation, geometry validation
 
-```python
-from se3_diffusion import SE3DiffusionDenoiser
+- diffusion schedule (forward/reverse)
+
+- noise prediction## Code Example
+
+- se3 equivariance
+
+- conditioning modules```python
+
+- memorizationfrom se3_diffusion import SE3DiffusionDenoiser
+
 from backbone_diffusion import DiffusionSchedule
 
-# Initialize the 3-track RoseTTAFold model
-model = SE3DiffusionDenoiser(
-    embed_dim=128,
+```bash
+
+python -m pytest tests/ -v# Initialize the 3-track RoseTTAFold model
+
+# all 38 passmodel = SE3DiffusionDenoiser(
+
+```    embed_dim=128,
+
     num_layers=4,
-    num_heads=4
+
+## mentor checklist    num_heads=4
+
 )
 
+from bharath's feedback:
+
 # Create diffusion schedule
-schedule = DiffusionSchedule(num_timesteps=100)
 
-# Forward pass: predict noise
-coords = torch.randn(4, 50, 9)  # (batch, residues, 3 atoms × 3 coords)
-t = torch.randint(0, 100, (4,))  # timesteps
+- [x] memorization test (5-10 samples) - done, passesschedule = DiffusionSchedule(num_timesteps=100)
+
+- [x] numpy doc style - all modules documented
+
+- [x] type annotations - all functions typed  # Forward pass: predict noise
+
+- [x] usage examples - tutorials foldercoords = torch.randn(4, 50, 9)  # (batch, residues, 3 atoms × 3 coords)
+
+- [x] unit tests - 38 tests passingt = torch.randint(0, 100, (4,))  # timesteps
+
 noise_pred = model(coords, t)
-```
 
-## Project Structure
+## next steps```
 
-```
+
+
+- [ ] pdb dataset integration (need more compute)## Project Structure
+
+- [ ] scale up training
+
+- [ ] add more conditioning types```
+
 rfdiffusion-prototype/
-├── se3_diffusion.py         # Main SE3 diffusion denoiser
-├── rosettafold.py           # RoseTTAFold 3-track architecture
+
+---├── se3_diffusion.py         # Main SE3 diffusion denoiser
+
+gsoc 2026 prep - deepchem rfdiffusion project├── rosettafold.py           # RoseTTAFold 3-track architecture
+
 ├── se3_layers.py            # Invariant Point Attention
 ├── frame_representation.py  # SE(3) frame utilities
 ├── backbone_diffusion.py    # Basic DDPM implementation
