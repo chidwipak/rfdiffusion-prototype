@@ -1,5 +1,6 @@
 """
 SE3-Equivariant Diffusion Denoiser for Protein Backbones
+=========================================================
 
 This acts as the main "brain" of the diffusion model. 
 It takes noisy coordinates and predicts the noise to be removed.
@@ -7,6 +8,15 @@ Includes the RoseTTAFold backbone we implemented.
 
 Author: Chidwipak
 Date: January 2026
+
+Examples
+--------
+>>> from se3_diffusion import SE3DiffusionDenoiser
+>>> model = SE3DiffusionDenoiser(embed_dim=128, num_layers=4)
+>>> coords = torch.randn(2, 30, 9)  # (batch, residues, 3 atoms * 3 coords)
+>>> t = torch.tensor([10, 50])  # timesteps
+>>> noise_pred = model(coords, t)
+>>> print(noise_pred.shape)  # (2, 30, 9)
 """
 
 import math
@@ -37,13 +47,43 @@ except ImportError:
 
 
 class SinusoidalPositionEmbedding(nn.Module):
-    """Sinusoidal position embedding for diffusion timesteps."""
+    """
+    Sinusoidal position embedding for diffusion timesteps.
     
-    def __init__(self, dim: int):
+    Encodes integer timesteps into continuous vector representations
+    using sinusoidal functions at different frequencies.
+    
+    Parameters
+    ----------
+    dim : int
+        Dimension of the output embedding.
+    
+    Examples
+    --------
+    >>> embedder = SinusoidalPositionEmbedding(dim=64)
+    >>> t = torch.tensor([0, 50, 100])
+    >>> emb = embedder(t)
+    >>> print(emb.shape)  # (3, 64)
+    """
+    
+    def __init__(self, dim: int) -> None:
         super().__init__()
         self.dim = dim
     
     def forward(self, t: torch.Tensor) -> torch.Tensor:
+        """
+        Compute sinusoidal embeddings for timesteps.
+        
+        Parameters
+        ----------
+        t : torch.Tensor
+            Integer timesteps of shape (batch_size,).
+        
+        Returns
+        -------
+        torch.Tensor
+            Embeddings of shape (batch_size, dim).
+        """
         device = t.device
         half_dim = self.dim // 2
         embeddings = math.log(10000) / (half_dim - 1)
@@ -55,7 +95,46 @@ class SinusoidalPositionEmbedding(nn.Module):
 
 class SE3DiffusionDenoiser(nn.Module):
     """
-    My implementation of the SE3-aware diffusion denoiser.
+    SE3-equivariant diffusion denoiser for protein backbone generation.
+    
+    This model implements the core denoising network that predicts noise
+    added to protein backbone coordinates. It uses the RoseTTAFold 3-track
+    architecture internally to maintain SE(3) equivariance.
+    
+    Parameters
+    ----------
+    embed_dim : int, optional
+        Dimension of 1D sequence embeddings. Default: 256.
+    time_dim : int, optional
+        Dimension of timestep embeddings. Default: 128.
+    num_layers : int, optional
+        Number of RoseTTAFold blocks. Default: 4.
+    num_heads : int, optional
+        Number of attention heads. Default: 8.
+    
+    Attributes
+    ----------
+    frame_encoder : ResidueFrameEncoder
+        Converts backbone coords to SE(3) frames.
+    backbone : RoseTTAFoldModule
+        The 3-track network (1D, 2D, 3D).
+    trans_head : nn.Sequential
+        Predicts translation noise.
+    rot_head : nn.Sequential
+        Predicts rotation noise.
+    
+    Examples
+    --------
+    >>> model = SE3DiffusionDenoiser(embed_dim=128, num_layers=4)
+    >>> x_noisy = torch.randn(4, 50, 9)  # 4 proteins, 50 residues
+    >>> t = torch.randint(0, 100, (4,))
+    >>> noise_pred = model(x_noisy, t)
+    >>> print(noise_pred.shape)  # torch.Size([4, 50, 9])
+    
+    See Also
+    --------
+    BackboneDiffusionDenoiser : Simpler MLP-based denoiser.
+    RoseTTAFoldModule : The 3-track backbone network.
     
     Structure:
     1. Embeddings: Convert coords to frames.

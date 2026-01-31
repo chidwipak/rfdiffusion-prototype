@@ -1,10 +1,19 @@
 """
 Unit tests for RoseTTAFold architecture
+
+Author: Chidwipak
+Date: January 2026
 """
 
+import sys
+import os
 import unittest
 import torch
-from prototype.rosettafold import RoseTTAFoldBlock, RoseTTAFoldModule
+
+# Add parent directory to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from rosettafold import RoseTTAFoldBlock, RoseTTAFoldModule
 
 class TestRoseTTAFold(unittest.TestCase):
     

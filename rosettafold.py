@@ -1,14 +1,33 @@
 """
 RoseTTAFold Architecture Implementation
+=======================================
 
-I implemented the 3-track architecture from RoseTTAFold/RFDiffusion here.
+Implements the 3-track architecture from RoseTTAFold/RFDiffusion.
 It handles three types of information:
-1. 1D Track: Per-residue features (like sequence info)
-2. 2D Track: Pairwise features (distances between residues)
-3. 3D Track: Actual coordinates (rotations + translations)
+
+1. **1D Track**: Per-residue features (like sequence info)
+2. **2D Track**: Pairwise features (distances between residues)
+3. **3D Track**: Actual coordinates (rotations + translations)
 
 Author: Chidwipak
 Date: January 2026
+
+Examples
+--------
+>>> from rosettafold import RoseTTAFoldModule
+>>> model = RoseTTAFoldModule(depth=4, d_model_1d=128, d_model_2d=64)
+>>> seq = torch.randn(2, 30, 128)  # 1D features
+>>> pair = torch.randn(2, 30, 30, 64)  # 2D features
+>>> R = torch.eye(3).expand(2, 30, 3, 3)  # Rotation matrices
+>>> t = torch.zeros(2, 30, 3)  # Translation vectors
+>>> seq_out, pair_out, R_out, t_out = model(seq, pair, R, t)
+
+References
+----------
+.. [1] Baek et al. "Accurate prediction of protein structures and 
+   interactions using a three-track neural network." Science 2021.
+.. [2] Watson et al. "De novo design of protein structure and function 
+   with RFdiffusion." Nature 2023.
 """
 
 import torch
@@ -23,10 +42,48 @@ except ImportError:
     # If imports fail, just pass for now (useful when running scripts from different dirs)
     pass
 
+
 class RoseTTAFoldBlock(nn.Module):
     """
-    A single block that updates 1D, 2D, and 3D tracks.
-    This is the core building block of the network.
+    A single RoseTTAFold block that updates 1D, 2D, and 3D tracks.
+    
+    This is the core building block of the network. Each block:
+    - Updates 1D features via self-attention
+    - Integrates information between tracks
+    - Updates 3D geometry via Invariant Point Attention
+    
+    Parameters
+    ----------
+    d_model_1d : int, optional
+        Dimension of 1D (sequence) features. Default: 128.
+    d_model_2d : int, optional
+        Dimension of 2D (pairwise) features. Default: 64.
+    d_pair : int, optional
+        Output dimension for geometric pair features. Default: 32.
+    n_heads_1d : int, optional
+        Number of attention heads for 1D track. Default: 4.
+    n_heads_2d : int, optional
+        Number of attention heads for 2D track. Default: 4.
+    n_heads_3d : int, optional
+        Number of attention heads for IPA. Default: 4.
+    dropout : float, optional
+        Dropout probability. Default: 0.1.
+    
+    Attributes
+    ----------
+    attn_1d : nn.MultiheadAttention
+        Self-attention for 1D track.
+    ipa : InvariantPointAttention
+        Geometry-aware attention for 3D track.
+    
+    Examples
+    --------
+    >>> block = RoseTTAFoldBlock(d_model_1d=64, d_model_2d=32)
+    >>> seq = torch.randn(2, 10, 64)
+    >>> pair = torch.randn(2, 10, 10, 32)
+    >>> R = torch.eye(3).expand(2, 10, 3, 3)
+    >>> t = torch.zeros(2, 10, 3)
+    >>> seq_new, pair_new, R_new, t_new = block(seq, pair, R, t)
     """
     
     def __init__(

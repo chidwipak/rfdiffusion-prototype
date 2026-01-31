@@ -1,11 +1,20 @@
 """
 Unit tests for backbone_diffusion.py
+
+Author: Chidwipak
+Date: January 2026
 """
 
+import sys
+import os
 import unittest
 import torch
 import torch.nn as nn
-from prototype.backbone_diffusion import (
+
+# Add parent directory to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from backbone_diffusion import (
     SinusoidalPositionEmbedding,
     ResidualBlock,
     BackboneDiffusionDenoiser,

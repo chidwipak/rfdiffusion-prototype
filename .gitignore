@@ -50,3 +50,13 @@ logs/
 # Data
 data/
 *.pdb
+
+# Research / Experiment Files (Ignored for Stealth)
+train_cath.py
+cath_loader.py
+scAF_eval.py
+RESEARCH_*.md
+cath_data/
+cath_checkpoints/
+scAF_results/
+*.log
