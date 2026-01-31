@@ -1,83 +1,60 @@
-# RFDiffusion Prototype for DeepChem
+# RFDiffusion Prototype for DeepChem (GSoC 2026)
 
-A working implementation of RFDiffusion-style protein structure generation, built as preparation for GSoC 2026.
+This is my preparation project for Google Summer of Code 2026.
+My goal is to bring advanced protein design models like RFDiffusion into DeepChem.
 
-## What This Is
+## What's in this repo?
 
-This prototype demonstrates core concepts from RFDiffusion paper:
-- **DDPM diffusion** for protein backbone coordinates
-- **SE3-equivariant denoiser** with Invariant Point Attention
-- **Conditioning mechanisms** (motif, length, binder)
-- **TorchModel integration** following DeepChem patterns
+I implemented a diffusion model that generates protein backbones. It works in 3 stages of complexity:
+1.  **Basic Denoising**: Simple diffusion (like for images).
+2.  **SE3-Equivariant**: Understands rotation and translation of molecules.
+3.  **RoseTTAFold Backbone**: The full 3-track architecture used in the actual RFDiffusion paper.
 
-## Results
+## How to Run
 
-Trained two models for comparison (50 epochs each):
-
-| Model      | Parameters | Loss (start → end) | Rotation Consistency |
-| ---------- | ---------- | ------------------ | -------------------- |
-| Basic DDPM | 1.2M       | 1.38 → 0.29        | 0.132 error          |
-| SE3 Model  | 950K       | 1.41 → 0.64        | 0.097 error          |
-
-SE3 model uses fewer parameters and is 1.4x more rotation-consistent.
-
-## Files
-
-| File                          | Description                          |
-| ----------------------------- | ------------------------------------ |
-| `backbone_diffusion.py`       | Core DDPM with sinusoidal embeddings |
-| `backbone_diffusion_model.py` | DeepChem TorchModel wrapper          |
-| `protein_coords_loader.py`    | PDB parsing utilities                |
-| `frame_representation.py`     | N-Ca-C → rotation + translation      |
-| `se3_diffusion.py`            | IPA-based SE3 denoiser               |
-| `conditioning.py`             | Motif, length, binder conditioning   |
-| `train_prototype.py`          | Basic training script                |
-| `train_se3.py`                | SE3 model training                   |
-| `analysis.py`                 | Comparison script                    |
-
-## Quick Start
+I made sure this is easy to run. Just set up a virtual environment and use the tutorial.
 
 ```bash
-# Create virtual environment
+# 1. Setup
 python -m venv venv
 source venv/bin/activate
+pip install torch numpy matplotlib
 
-# Install dependencies
-pip install torch numpy
+# 2. Run the Tutorial (Generates a protein!)
+python tutorials/rfdiffusion_tutorial.py
 
-# Run analysis (compares both models)
+# 3. Comparisons (Runs analysis script)
 python analysis.py
-
-# Train basic model
-python train_prototype.py --epochs 50
-
-# Train SE3 model  
-python train_se3.py --epochs 100
-
-# Quick test
-python train_se3.py --test-mode
 ```
 
-## Technical Details
+## Code Example
 
-### Frame Representation
-Converts N-Ca-C backbone atoms to rotation matrix + translation:
+Want to use the model in your own script?
+
+```python
+from rfdiffusion_prototype.se3_diffusion import SE3DiffusionDenoiser
+
+# Initialize the 3-track RoseTTAFold model
+model = SE3DiffusionDenoiser(
+    embed_dim=128,
+    num_layers=4
+).cuda()
+
+# Pass in noisy coordinates (Batch, Residues, 9)
+noise_pred = model(coords, timesteps)
 ```
-N, Ca, C coordinates → (R ∈ SO(3), t ∈ ℝ³)
-```
 
-### Invariant Point Attention
-Combines standard attention with distance-based geometric attention for rotation consistency.
+## Structure
 
-### Conditioning
-All three types work as additive embeddings and can be combined.
+- `rfdiffusion-prototype/`: The core package.
+    - `rosettafold.py`: The RoseTTAFold architecture.
+    - `se3_diffusion.py`: The main diffusion logic.
+- `tutorials/`: Example scripts showing how it works.
 
-## Author
+## Status
 
-Chidwipak 
-
-## References
-
-- RFDiffusion: "De novo design of protein structure and function" (Nature 2023)
-- AlphaFold2: IPA architecture
-- DDPM: "Denoising Diffusion Probabilistic Models" (Ho et al. 2020)
+- [x] Basic Prototype
+- [x] SE3 Layers (Invariant Point Attention)
+- [x] Conditioning (Motifs, Length)
+- [x] Full RoseTTAFold Backbone
+- [ ] Benchmarking on CATH dataset (Doing this next!)
