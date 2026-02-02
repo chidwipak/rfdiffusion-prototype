@@ -123,6 +123,16 @@ class ImprovedDiffusionDenoiser(nn.Module):
     2. Better architecture with transformers
     3. Proper time conditioning
     4. Residue-level and atom-level features
+    
+    Examples
+    --------
+    >>> import torch
+    >>> model = ImprovedDiffusionDenoiser(coord_dim=9, embed_dim=128)
+    >>> coords = torch.randn(4, 50, 9)  # batch=4, length=50
+    >>> t = torch.randint(0, 1000, (4,))
+    >>> noise_pred = model(coords, t)
+    >>> noise_pred.shape
+    torch.Size([4, 50, 9])
     """
     
     def __init__(
