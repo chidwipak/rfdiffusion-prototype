@@ -1,4 +1,5 @@
-# protein diffusion model - gsoc 2026 prep# RFDiffusion Prototype - GSoC 2026# RFDiffusion Prototype for DeepChem (GSoC 2026)
+# protein diffusion model - gsoc 2026 prep
+# RFDiffusion Prototype for DeepChem (GSoC 2026)
 
 
 
